@@ -1,0 +1,1 @@
+web: dart run bin/chat_server.dart
