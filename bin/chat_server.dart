@@ -5,7 +5,7 @@ import 'package:shelf_web_socket/shelf_web_socket.dart';
 
 void main() async {
   final clients = <WebSocket>[];
-  final messageHistory = <String>[]; // 🧠 Xabarlar tarixi
+  final messageHistory = <String>[]; // 🧠 Tarix
 
   final handler = Cascade()
       .add((Request request) {
@@ -14,16 +14,15 @@ void main() async {
             print('🟢 Client connected.');
             clients.add(socket);
 
-            // ✉️ Eski xabarlarni jo‘natish
+            // ✉️ Oldingi xabarlarni clientga jo‘natish
             for (var msg in messageHistory) {
               socket.add('[OLD] $msg');
             }
 
-            // 🔄 Yangi xabarlar oqimini tinglash
+            // 🔁 Yangi xabarlar
             socket.listen((message) {
               print('📨 Message: $message');
-
-              messageHistory.add(message); // 🧠 Tarixga qo‘shish
+              messageHistory.add(message);
 
               for (var client in clients) {
                 if (client.readyState == WebSocket.open) {
