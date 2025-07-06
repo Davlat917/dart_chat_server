@@ -5,7 +5,7 @@ import 'package:shelf_web_socket/shelf_web_socket.dart';
 
 void main() async {
   final clients = <WebSocket>[];
-  final messages = <String>[]; // 🧠 Bu yerda barcha xabarlar saqlanadi
+  final messageHistory = <String>[]; // 🧠 Xabarlar tarixi
 
   final handler = Cascade()
       .add((Request request) {
@@ -14,19 +14,19 @@ void main() async {
             print('🟢 Client connected.');
             clients.add(socket);
 
-            // 🧾 Ulanishda eski xabarlarni yuborish
-            if (messages.isNotEmpty) {
-              socket.add(messages); // ⚠️ shelf_web_socket 2.0.0 versiyada List yuboriladi
+            // ✉️ Eski xabarlarni jo‘natish
+            for (var msg in messageHistory) {
+              socket.add('[OLD] $msg');
             }
 
+            // 🔄 Yangi xabarlar oqimini tinglash
             socket.listen((message) {
               print('📨 Message: $message');
 
-              messages.add(message); // 🧠 Tarixga qo‘shamiz
+              messageHistory.add(message); // 🧠 Tarixga qo‘shish
 
-              // 🔁 Boshqalarga yuboramiz
               for (var client in clients) {
-                if (client != socket && client.readyState == WebSocket.open) {
+                if (client.readyState == WebSocket.open) {
                   client.add(message);
                 }
               }
@@ -43,6 +43,5 @@ void main() async {
 
   final port = int.parse(Platform.environment['PORT'] ?? '8080');
   final server = await shelf_io.serve(handler, InternetAddress.anyIPv4, port);
-
   print('✅ Server running at ws://${server.address.host}:${server.port}/ws');
 }
