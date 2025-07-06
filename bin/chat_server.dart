@@ -3,33 +3,31 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_web_socket/shelf_web_socket.dart';
 
-final connectedClients = <WebSocket>[];
-
 void main() async {
-  final handler = Cascade().add(webSocketHandler((WebSocket socket) {
-        connectedClients.add(socket);
-        print('🟢 Client connected. Total: ${connectedClients.length}');
+  final clients = <WebSocket>[];
 
-        socket.listen(
-          (message) {
-            print('📨 Message: $message');
-            for (var client in connectedClients) {
-              if (client.readyState == WebSocket.open) {
-                client.add(message);
-              }
-            }
-          },
-          onDone: () {
-            connectedClients.remove(socket);
-            print('🔴 Client disconnected. Total: ${connectedClients.length}');
-          },
-        );
-      }))
-      .add((Request request) => Response.ok('✅ Chat server is running'))
-      .handler;
+  final handler = webSocketHandler((WebSocket socket) {
+    print('🟢 Client connected.');
+    clients.add(socket);
+
+    socket.listen((message) {
+      print('📨 Message: $message');
+      // Barcha klientlarga jo‘natamiz
+      for (var client in clients) {
+        if (client != socket && client.readyState == WebSocket.open) {
+          client.add(message);
+        }
+      }
+    }, onDone: () {
+      clients.remove(socket);
+      print('🔴 Client disconnected.');
+    });
+  });
+
+  final pipeline = Pipeline().addMiddleware(logRequests()).addHandler(handler);
 
   final port = int.parse(Platform.environment['PORT'] ?? '8080');
 
-  final server = await shelf_io.serve(handler, InternetAddress.anyIPv4, port);
-  print('🚀 Serving at ws://${server.address.host}:${server.port}');
+  final server = await shelf_io.serve(pipeline, InternetAddress.anyIPv4, port);
+  print('✅ Server running at ws://${server.address.host}:${server.port}/');
 }
